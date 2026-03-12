@@ -1,12 +1,26 @@
 name: CD
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - id: check
+        run: echo "proceed=true" >> $GITHUB_OUTPUT
+
   deploy:
+    needs: check
     runs-on: self-hosted
     environment: production
+    if: ${{ needs.check.outputs.proceed == 'true' }}
 
     steps:
       - name: Deploy
